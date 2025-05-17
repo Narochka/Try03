@@ -1,104 +1,200 @@
-<!-- index.html -->
+<!-- Zappar WebGL template for Unity 2020 and above versions -->
+<!-- NFYNT -->
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en-us">
+
 <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-    <title>Try03 AR</title>
-    <link rel="shortcut icon" href="favicon.ico"/>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="shortcut icon" href="favicon.ico">
+    <title>Try03</title>
     <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; }
-    #unity-container, #unity-canvas { width:100%; height:100%; }
-    #loading-cover { display:none; position:absolute; top:0; left:0; right:0; bottom:0;
-                     background:rgba(0,0,0,0.8); align-items:center; justify-content:center; }
-    #spinner { width:64px; height:64px; border:8px solid rgba(255,255,255,0.2);
-               border-left-color:white; border-radius:50%; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    #start-button {
-      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-      padding:20px 40px; font-size:1.2em; background:#0078d7; color:white;
-      border:none; border-radius:8px; cursor:pointer;
-    }
+        html {
+            box-sizing: border-box;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        html,
+        body {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        #unity-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        #unity-canvas {
+            width: 100%;
+            height: 100%;
+
+            background: #231F20;
+        }
+
+        #loading-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #unity-loading-bar {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #unity-progress-bar-empty {
+            width: 80%;
+            height: 24px;
+            margin: 10px 20px 20px 10px;
+            text-align: left;
+            border: 1px solid white;
+            padding: 2px;
+        }
+
+        #unity-progress-bar-full {
+            width: 0%;
+            height: 100%;
+            background: white;
+        }
+
+        .light #unity-progress-bar-empty {
+            border-color: black;
+        }
+
+        .light #unity-progress-bar-full {
+            background: black;
+        }
+
+        .spinner,
+        .spinner:after {
+            border-radius: 50%;
+            width: 5em;
+            height: 5em;
+        }
+
+        .spinner {
+            margin: 10px;
+            font-size: 10px;
+            position: relative;
+            text-indent: -9999em;
+            border-top: 1.1em solid rgba(255, 255, 255, 0.2);
+            border-right: 1.1em solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1.1em solid rgba(255, 255, 255, 0.2);
+            border-left: 1.1em solid #ffffff;
+            transform: translateZ(0);
+            animation: spinner-spin 1.1s infinite linear;
+        }
+
+        @keyframes spinner-spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
-<body>
-    <!-- КНОПКА ЗАПУСКА -->
-    <button id="start-button">Нажмите, чтобы запустить AR</button>
 
-    <!-- КОНТЕЙНЕР ДЛЯ UNITY -->
-    <div id="unity-container" style="visibility:hidden;">
+<body class="dark">
+    <div id="unity-container" class="unity-desktop">
         <canvas id="unity-canvas"></canvas>
-        <div id="loading-cover">
-            <div id="spinner"></div>
+    </div>
+    <div id="loading-cover" style="display:none;">
+        <div id="unity-loading-bar">
+            <div id="unity-progress-bar-empty" style="display: none;">
+                <div id="unity-progress-bar-full"></div>
+            </div>
+            <div class="spinner"></div>
         </div>
     </div>
-
-    <!-- Zappar CV -->
-    <script src="https://libs.zappar.com/zappar-cv/2.1.9/zappar-cv.js"></script>
+    <script type="text/javascript" src="https://libs.zappar.com/zappar-cv/3.0.0-beta.5/zappar-cv.js"></script>
     <script>
-      // iOS-фикс индексированной БД
-      indexedDB.open("dummy_indexdb", 1);
+        var db = indexedDB.open("dummy_indexdb", 1); // iOS 14.6 fix; the call to open indexdb hangs forever otherwise
 
-      const buildUrl    = "Build",
-            loaderUrl   = buildUrl + "/Build.loader.js",
-            config      = {
-              dataUrl: buildUrl + "/Build.data",
-              frameworkUrl: buildUrl + "/Build.framework.js",
-              codeUrl: buildUrl + "/Build.wasm",
-              streamingAssetsUrl: "StreamingAssets",
-              companyName: "DefaultCompany",
-              productName: "Try03",
-              productVersion: "0.1",
-              cacheControl: url => {
-                if (url.match(/\.data$|\.bundle$|\.zpt$/)) return "must-revalidate";
-                if (url.match(/\.mp4$|\.custom$|\.zbin$/)) return "immutable";
-                return "no-store";
-              }
-            };
-
-      const container      = document.getElementById("unity-container");
-      const canvas         = document.getElementById("unity-canvas");
-      const loadingCover   = document.getElementById("loading-cover");
-      const startButton    = document.getElementById("start-button");
-
-      // Инициализируем Zappar CV
-      window.zappar = ZCV.initialize();
-
-      startButton.addEventListener("click", async () => {
-        // 1) Скрываем кнопку
-        startButton.style.display = "none";
-        // 2) Запрашиваем разрешение (камера + AudioContext) у пользователя
-        await window.zappar.permission_request_ui_promise();
-        // 3) Показываем контейнер Unity
-        container.style.visibility = "";
-        // 4) Загружаем билд
-        loadUnity();
-      });
-
-      function loadUnity() {
-        // Вставляем скрипт-лоадер Unity
-        const s = document.createElement("script");
-        s.src = loaderUrl;
-        document.body.appendChild(s);
-
-        // Начинаем отображать лоадер
-        loadingCover.style.display = "flex";
-
-        // После загрузки loader.js — создаём инстанс Unity
-        s.onload = () => {
-          createUnityInstance(canvas, config, progress => {
-            // обновляем индикатор загрузки (можно расширить)
-            // например: progressBarFull.style.width = `${progress * 100}%`;
-          }).then(unityInstance => {
-            // Скрыть лоадер
-            loadingCover.style.display = "none";
-            window.uarGameInstance = unityInstance;
-          }).catch(err => {
-            alert("Ошибка запуска Unity: " + err);
-          });
+        const buildUrl = "Build";
+        const loaderUrl = buildUrl + "/Build.loader.js";
+        const config = {
+            dataUrl: buildUrl + "/Build.data",
+            frameworkUrl: buildUrl + "/Build.framework.js",
+            codeUrl: buildUrl + "/Build.wasm",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "DefaultCompany",
+            productName: "Try03",
+            productVersion: "0.1",
+        //Useful when used along with Filename as Hashes option
         };
-      }
+
+        const container = document.querySelector("#unity-container");
+        const canvas = document.querySelector("#unity-canvas");
+        const loadingCover = document.querySelector("#loading-cover");
+        const progressBarEmpty = document.querySelector("#unity-progress-bar-empty");
+        const progressBarFull = document.querySelector("#unity-progress-bar-full");
+        const spinner = document.querySelector('.spinner');
+
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            container.className = "unity-mobile";
+            //config.matchWebGLToCanvasSize = false;    
+            //set devicePixelRatio=1; to avoid draining fillrate performance on mobile and override low DPI mode
+            config.devicePixelRatio = window.devicePixelRatio;
+        }
+        loadingCover.style.display = "";
+
+        window.zappar = ZCV.initialize();
+
+        const script = document.createElement("script");
+        script.src = loaderUrl;
+        //script.onload = () => { CreateUnityLoader();   };
+        document.body.appendChild(script);
+
+        window.zappar.permission_request_ui_promise().then(WaitForZCVLoad);
+
+        function WaitForZCVLoad() {
+            if (zappar.loaded()) {
+                CreateUnityLoader();
+                return;
+            }
+            setTimeout(WaitForZCVLoad, 500);
+        }
+
+        function CreateUnityLoader() {
+            createUnityInstance(canvas, config, (progress) => {
+                spinner.style.display = "none";
+                progressBarEmpty.style.display = "";
+                progressBarFull.style.width = `${100 * progress}%`;
+            }).then((unityInstance) => {
+                loadingCover.style.display = "none";
+                window.uarGameInstance = unityInstance;
+            }).catch((message) => {
+                alert(message);
+            });
+        }
+
     </script>
 </body>
+
 </html>

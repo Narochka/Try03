@@ -35,17 +35,15 @@
   <button id="start-button">Нажмите для запуска AR</button>
 
   <!-- Подключаем проверенную версию Zappar CV -->
-  <script src="https://libs.zappar.com/zappar-cv/2.1.9/zappar-cv.js"></script>
-  <script>
-    // iOS IndexedDB-фикс
-    indexedDB.open("dummy_indexdb", 1);
-
-    const buildUrl = "Build";
-    const config = {
-      dataUrl: `${buildUrl}/Build.data`,
-      frameworkUrl: `${buildUrl}/Build.framework.js`,
-      codeUrl: `${buildUrl}/Build.wasm`,
-      streamingAssetsUrl: "StreamingAssets",
+  <script type="text/javascript" src="https://libs.zappar.com/zappar-cv/2.1.9/zappar-cv.js"></script>
+<script>
+  const buildUrl = "./Build";
+  const loaderUrl = buildUrl + "/Build.loader.js";
+  const config = {
+    dataUrl: buildUrl + "/Build.data",
+    frameworkUrl: buildUrl + "/Build.framework.js",
+    codeUrl: buildUrl + "/Build.wasm",
+    streamingAssetsUrl: "./StreamingAssets",
       companyName: "DefaultCompany",
       productName: "Try03",
       productVersion: "0.1",
